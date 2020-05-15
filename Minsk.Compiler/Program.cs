@@ -6,71 +6,43 @@ using System.Reflection.Metadata.Ecma335;
 
 namespace Minsk.Compiler
 {
-    class Program
+    static class Program
     {
         static void Main(string[] args)
         {
             while (true)
             {
-                Console.Write(">");
+                Console.Write("> ");
                 var line = Console.ReadLine();
                 if (string.IsNullOrWhiteSpace(line))
                 {
                     return;
                 }
-                var parser = new Parser(line);
-                var syntaxTree = parser.Parse();
-                var color = Console.ForegroundColor;
-                Console.ForegroundColor = ConsoleColor.DarkBlue;
-                PrettyPrint(syntaxTree.Root);
-                Console.ForegroundColor = color;
-                if (parser.Diagnostics.Any())
-                {
-                    Console.ForegroundColor = ConsoleColor.DarkRed;
-                    foreach (var parserDiagnostic in parser.Diagnostics)
-                    {
-                        Console.WriteLine(parserDiagnostic);
-                    }
-                    Console.ForegroundColor = color;
 
+                var lexer = new Lexer(line);
+                while (true)
+                {
+                    var token = lexer.NextToken();
+                    if (token.Kind == SyntaxKind.EndOfFileToken)
+                    {
+                        break;
+                    }
+
+                    Console.Write($"{token.Kind}: '{token.Text}'");
+                    if (token.Value != null)
+                    {
+                        Console.Write($"value : {token.Value}");
+                    }
+
+                    Console.WriteLine();
                 }
             }
         }
-
-        static void PrettyPrint(SyntaxNode node, string indent = "", bool isLast = true)
-        {
-            var marker = isLast ? "└──" : "├──";
-
-            Console.Write(indent);
-            Console.Write(marker);
-            Console.Write(node.Kind);
-
-            if (node is SyntaxToken t && t.Value != null)
-            {
-                Console.Write(" ");
-                Console.Write(t.Value);
-            }
-
-            Console.WriteLine();
-
-            indent += isLast ? "    " : "│   ";
-
-            var lastChild = node.GetChildren().LastOrDefault();
-
-            foreach (var child in node.GetChildren())
-                PrettyPrint(child, indent, child == lastChild);
-        }
     }
 
-    class SyntaxToken : SyntaxNode
+    class SyntaxToken
     {
-        public override SyntaxKind Kind { get; }
-
-        public override IEnumerable<SyntaxNode> GetChildren()
-        {
-            return Enumerable.Empty<SyntaxToken>();
-        }
-
+        public SyntaxKind Kind { get; }
         public int Position { get; }
         public string Text { get; }
         public object Value { get; }
@@ -84,34 +56,26 @@ namespace Minsk.Compiler
         }
     }
 
-    enum SyntaxKind
+    public enum SyntaxKind
     {
         NumberToken,
         WhiteSpaceToken,
         PlusToken,
+        MinusToken,
         OpenParenthesisToken,
         SlashToken,
         StarToken,
-        MinusToken,
         CloseParenthesisToken,
         BadToken,
-        EndOfFileToken,
-        NumberExpression,
-        BinaryExpressionSyntax
+        EndOfFileToken
     }
 
     class Lexer
     {
-        private IList<string> _diagnostics = new List<string>();
-        public IEnumerable<string> Diagnositics => _diagnostics;
         private readonly string _text;
         private int _position;
-        public Lexer(string text)
-        {
-            _text = text;
-        }
 
-        private char Current
+        private Char Current
         {
             get
             {
@@ -124,21 +88,28 @@ namespace Minsk.Compiler
             }
         }
 
+        public Lexer(string text)
+        {
+            _text = text;
+        }
+
         private void Next()
         {
             _position++;
         }
 
-
         public SyntaxToken NextToken()
         {
-            //<numbers>
-            //+ = * / ( )
-            //<whitespace>
             if (_position >= _text.Length)
             {
                 return new SyntaxToken(SyntaxKind.EndOfFileToken, _position, "\0", null);
             }
+
+            //<numbers>
+            //+ - * /
+            //<whitespace>]
+            //badToken
+            //EOF
             if (char.IsDigit(Current))
             {
                 var start = _position;
@@ -160,47 +131,35 @@ namespace Minsk.Compiler
                 {
                     Next();
                 }
+
                 var length = _position - start;
                 var text = _text.Substring(start, length);
                 return new SyntaxToken(SyntaxKind.WhiteSpaceToken, start, text, null);
             }
 
-            if (Current == '+')
+            return Current switch
             {
-                return new SyntaxToken(SyntaxKind.PlusToken, _position++, "+", null);
-            }
-            if (Current == '-')
-            {
-                return new SyntaxToken(SyntaxKind.MinusToken, _position++, "-", null);
-            }
-            if (Current == '*')
-            {
-                return new SyntaxToken(SyntaxKind.StarToken, _position++, "*", null);
-            }
-            if (Current == '/')
-            {
-                return new SyntaxToken(SyntaxKind.SlashToken, _position++, "/", null);
-            }
-            if (Current == '(')
-            {
-                return new SyntaxToken(SyntaxKind.OpenParenthesisToken, _position++, "(", null);
-            }
-            if (Current == ')')
-            {
-                return new SyntaxToken(SyntaxKind.CloseParenthesisToken, _position++, ")", null);
-            }
-            _diagnostics.Add($"ERROR: bad character input '{Current}'");
-            return new SyntaxToken(SyntaxKind.BadToken, _position++, _text.Substring(_position - 1, 1), null);
+                '+' => new SyntaxToken(SyntaxKind.PlusToken, _position++, "+", null),
+                '-' => new SyntaxToken(SyntaxKind.MinusToken, _position++, "-", null),
+                '*' => new SyntaxToken(SyntaxKind.StarToken, _position++, "*", null),
+                '/' => new SyntaxToken(SyntaxKind.SlashToken, _position++, "/", null),
+                '(' => new SyntaxToken(SyntaxKind.OpenParenthesisToken, _position++, "(", null),
+                ')' => new SyntaxToken(SyntaxKind.CloseParenthesisToken, _position++, ")", null),
+                _ => new SyntaxToken(SyntaxKind.BadToken, _position++, _text.Substring(_position - 1, 1), null)
+            };
         }
+    }
+
+    abstract class SyntaxNode
+    {
+        public abstract SyntaxKind Kind { get; }
     }
 
     class Parser
     {
-        public IEnumerable<string> Diagnostics => _diagnostics;
-
-        private readonly SyntaxToken[] _tokens;
+        private SyntaxToken[] _tokens;
         private int _position;
-        private List<string> _diagnostics = new List<string>();
+
         public Parser(string text)
         {
             var tokens = new List<SyntaxToken>();
@@ -209,15 +168,14 @@ namespace Minsk.Compiler
             do
             {
                 token = lexer.NextToken();
-                if (token.Kind != SyntaxKind.BadToken &&
-                    token.Kind != SyntaxKind.WhiteSpaceToken)
+                if (token.Kind != SyntaxKind.WhiteSpaceToken
+                    && token.Kind != SyntaxKind.BadToken)
                 {
                     tokens.Add(token);
                 }
             } while (token.Kind != SyntaxKind.EndOfFileToken);
 
             _tokens = tokens.ToArray();
-            _diagnostics.AddRange(lexer.Diagnositics);
         }
 
         private SyntaxToken Peek(int offset)
@@ -225,122 +183,12 @@ namespace Minsk.Compiler
             var index = _position + offset;
             if (index >= _tokens.Length)
             {
-                return _tokens[_tokens.Length - 1];
+                return _tokens.Last();
             }
 
             return _tokens[index];
         }
 
-        private SyntaxToken NextToken()
-        {
-            var current = Current;
-            _position++;
-            return current;
-        }
         private SyntaxToken Current => Peek(0);
-        private SyntaxToken Match(SyntaxKind kind)
-        {
-            if (Current.Kind == kind)
-            {
-                return NextToken();
-            }
-            _diagnostics.Add($"ERROR: Unexpected Token <{Current.Kind}>, expected <{kind}>, at <{Current.Text }>");
-            return new SyntaxToken(kind, Current.Position, null, null);
-        }
-
-        public SyntaxTree Parse()
-        {
-            var expression = ExtractExpression();
-            var eofToken = Match(SyntaxKind.EndOfFileToken);
-            return new SyntaxTree(_diagnostics, expression, eofToken);
-        }
-
-        private ExpressionSyntax ExtractExpression()
-        {
-            var left = ParsePrimaryExpression();
-            while (Current.Kind == SyntaxKind.PlusToken ||
-                   Current.Kind == SyntaxKind.MinusToken ||
-                   Current.Kind == SyntaxKind.StarToken ||
-                   Current.Kind == SyntaxKind.SlashToken)
-            {
-                var operatorToken = NextToken();
-                var right = ParsePrimaryExpression();
-                left = new BinaryExpressionSyntax(left, operatorToken, right);
-            }
-
-            return left;
-        }
-
-        private ExpressionSyntax ParsePrimaryExpression()
-        {
-            var numberToken = Match(SyntaxKind.NumberToken);
-            return new NumberExpressionSyntax(numberToken);
-        }
     }
-
-    abstract class SyntaxNode
-    {
-        public abstract SyntaxKind Kind { get; }
-        public abstract IEnumerable<SyntaxNode> GetChildren();
-    }
-
-    abstract class ExpressionSyntax : SyntaxNode
-    {
-
-    }
-
-    sealed class NumberExpressionSyntax : ExpressionSyntax
-    {
-        public SyntaxToken NumberToken { get; }
-
-        public NumberExpressionSyntax(SyntaxToken numberToken)
-        {
-            NumberToken = numberToken;
-        }
-
-        public override SyntaxKind Kind => SyntaxKind.NumberExpression;
-
-        public override IEnumerable<SyntaxNode> GetChildren()
-        {
-            yield return NumberToken;
-        }
-    }
-    sealed class BinaryExpressionSyntax : ExpressionSyntax
-    {
-        public ExpressionSyntax Left { get; }
-        public SyntaxToken OperatorToken { get; }
-        public ExpressionSyntax Right { get; }
-
-        public BinaryExpressionSyntax(ExpressionSyntax left, SyntaxToken operatorToken, ExpressionSyntax right)
-        {
-            Left = left;
-            OperatorToken = operatorToken;
-            Right = right;
-        }
-
-        public override SyntaxKind Kind => SyntaxKind.BinaryExpressionSyntax;
-
-        public override IEnumerable<SyntaxNode> GetChildren()
-        {
-            yield return Left;
-            yield return OperatorToken;
-            yield return Right;
-        }
-    }
-
-    sealed class SyntaxTree
-    {
-        public IReadOnlyList<string> Diagnostics { get; }
-        public ExpressionSyntax Root { get; }
-        public SyntaxToken EndOfFileToken { get; }
-
-        public SyntaxTree(IEnumerable<string> diagnostics, ExpressionSyntax root, SyntaxToken endOfFileToken)
-        {
-            Diagnostics = diagnostics.ToArray();
-            Root = root;
-            EndOfFileToken = endOfFileToken;
-        }
-    }
-
-
 }
