@@ -21,8 +21,17 @@ namespace Minsk.Compiler
 
                 var parser = new Parser(line);
                 var expression = parser.Parse();
-                Console.ForegroundColor = ConsoleColor.Red;
+                Console.ForegroundColor = ConsoleColor.Green;
                 PrettyPrint(expression);
+                Console.ForegroundColor = ConsoleColor.Red;
+                if (parser.Diagnostics.Any())
+                {
+                    foreach (var errorMsg in parser.Diagnostics)
+                    {
+                        Console.WriteLine(errorMsg);
+                    }
+                }
+
                 Console.ResetColor();
             }
         }
@@ -90,6 +99,8 @@ namespace Minsk.Compiler
     {
         private readonly string _text;
         private int _position;
+        private List<string> _diagnostics = new List<string>();
+        public IReadOnlyCollection<string> Diagnostics => _diagnostics;
 
         private Char Current
         {
@@ -153,7 +164,7 @@ namespace Minsk.Compiler
                 return new SyntaxToken(SyntaxKind.WhiteSpaceToken, start, text, null);
             }
 
-            return Current switch
+            var currentToken = Current switch
             {
                 '+' => new SyntaxToken(SyntaxKind.PlusToken, _position++, "+", null),
                 '-' => new SyntaxToken(SyntaxKind.MinusToken, _position++, "-", null),
@@ -163,6 +174,12 @@ namespace Minsk.Compiler
                 ')' => new SyntaxToken(SyntaxKind.CloseParenthesisToken, _position++, ")", null),
                 _ => new SyntaxToken(SyntaxKind.BadToken, _position++, _text.Substring(_position - 1, 1), null)
             };
+            if (currentToken.Kind == SyntaxKind.BadToken)
+            {
+                _diagnostics.Add($"ERROR: Bad token : <{currentToken.Kind}>:{currentToken.Text}");
+            }
+
+            return currentToken;
         }
     }
 
@@ -217,10 +234,18 @@ namespace Minsk.Compiler
         }
     }
 
+    class SyntaxTree
+    {
+        public SyntaxTree(SyntaxNode root)
+        {
+        }
+    }
+
     public class Parser
     {
         private SyntaxToken[] _tokens;
         private int _position;
+        private List<string> _diagnostics = new List<string>();
 
         public Parser(string text)
         {
@@ -238,7 +263,10 @@ namespace Minsk.Compiler
             } while (token.Kind != SyntaxKind.EndOfFileToken);
 
             _tokens = tokens.ToArray();
+            _diagnostics.AddRange(lexer.Diagnostics);
         }
+
+        public IReadOnlyCollection<string> Diagnostics => _diagnostics;
 
         private SyntaxToken Peek(int offset)
         {
@@ -267,6 +295,7 @@ namespace Minsk.Compiler
                 return ReturnCurrentAndMoveNext();
             }
 
+            _diagnostics.Add($"ERROR: Unexpected token : <{Current.Kind}>:{Current.Text},excepted:<{kind}>");
             return new SyntaxToken(kind, Current.Position, null, null);
         }
 
