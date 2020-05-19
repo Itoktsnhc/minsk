@@ -20,28 +20,44 @@ namespace Minsk.CodeAnalysis.Tools
 
         private int EvaluateExpression(ExpressionSyntax node)
         {
-            if (node is LiteralExpressionSyntax n)
-                return (int) n.LiteralToken.Value;
-
-            if (node is BinaryExpressionSyntax b)
+            switch (node)
             {
-                var left = EvaluateExpression(b.Left);
-                var right = EvaluateExpression(b.Right);
+                case LiteralExpressionSyntax n:
+                    return (int) n.LiteralToken.Value;
+                case UnaryExpressionSyntax u:
+                {
+                    var operand = EvaluateExpression(u.Operand);
+                    if (u.OperatorToken.Kind == SyntaxKind.MinusToken)
+                    {
+                        return operand;
+                    }
 
-                if (b.OperatorToken.Kind == SyntaxKind.PlusToken)
-                    return left + right;
-                else if (b.OperatorToken.Kind == SyntaxKind.MinusToken)
-                    return left - right;
-                else if (b.OperatorToken.Kind == SyntaxKind.StarToken)
-                    return left * right;
-                else if (b.OperatorToken.Kind == SyntaxKind.SlashToken)
-                    return left / right;
-                else
-                    throw new Exception($"Unexpected binary operator {b.OperatorToken.Kind}");
+                    else if (u.OperatorToken.Kind == SyntaxKind.PlusToken)
+                    {
+                        return -operand;
+                    }
+                    else
+                    {
+                        throw new Exception($"Unexpected unary token {u.OperatorToken.Kind}");
+                    }
+                }
+                case BinaryExpressionSyntax b:
+                {
+                    var left = EvaluateExpression(b.Left);
+                    var right = EvaluateExpression(b.Right);
+
+                    return b.OperatorToken.Kind switch
+                    {
+                        SyntaxKind.PlusToken => left + right,
+                        SyntaxKind.MinusToken => left - right,
+                        SyntaxKind.StarToken => left * right,
+                        SyntaxKind.SlashToken => left / right,
+                        _ => throw new Exception($"Unexpected binary operator {b.OperatorToken.Kind}")
+                    };
+                }
+                case ParenthesizedExpressionSyntax p:
+                    return EvaluateExpression(p.Expression);
             }
-
-            if (node is ParenthesizedExpressionSyntax p)
-                return EvaluateExpression(p.Expression);
 
             throw new Exception($"Unexpected node {node.Kind}");
         }
