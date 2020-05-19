@@ -4,7 +4,7 @@ using Minsk.CodeAnalysis.Syntax;
 
 namespace Minsk.CodeAnalysis.Tools
 {
-    class Parser
+    public class Parser
     {
         private readonly SyntaxToken[] _tokens;
 
@@ -52,7 +52,7 @@ namespace Minsk.CodeAnalysis.Tools
             return current;
         }
 
-        private SyntaxToken Match(SyntaxKind kind)
+        private SyntaxToken MatchToken(SyntaxKind kind)
         {
             if (Current.Kind == kind)
                 return NextToken();
@@ -68,8 +68,8 @@ namespace Minsk.CodeAnalysis.Tools
 
         public SyntaxTree Parse()
         {
-            var expresion = ParseTerm();
-            var endOfFileToken = Match(SyntaxKind.EndOfFileToken);
+            var expresion = ParseExpression();
+            var endOfFileToken = MatchToken(SyntaxKind.EndOfFileToken);
             return new SyntaxTree(_diagnostics, expresion, endOfFileToken);
         }
 
@@ -109,12 +109,12 @@ namespace Minsk.CodeAnalysis.Tools
             {
                 var left = NextToken();
                 var expression = ParseExpression();
-                var right = Match(SyntaxKind.CloseParenthesisToken);
+                var right = MatchToken(SyntaxKind.CloseParenthesisToken);
                 return new ParenthesizedExpressionSyntax(left, expression, right);
             }
 
-            var numberToken = Match(SyntaxKind.NumberToken);
-            return new NumberExpressionSyntax(numberToken);
+            var numberToken = MatchToken(SyntaxKind.NumberToken);
+            return new LiteralExpressionSyntax(numberToken);
         }
     }
 }

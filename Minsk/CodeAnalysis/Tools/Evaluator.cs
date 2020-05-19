@@ -4,24 +4,24 @@ using Minsk.CodeAnalysis.Syntax;
 
 namespace Minsk.CodeAnalysis.Tools
 {
-    class Evaluator
+    public class Evaluator
     {
-        private readonly ExpressionSyntax _root;
+        private readonly ExpressionSyntax _node;
 
-        public Evaluator(ExpressionSyntax root)
+        public Evaluator(ExpressionSyntax node)
         {
-            _root = root;
+            _node = node;
         }
 
         public int Evaluate()
         {
-            return EvaluateExpression(_root);
+            return EvaluateExpression(_node);
         }
 
         private int EvaluateExpression(ExpressionSyntax node)
         {
-            if (node is NumberExpressionSyntax n)
-                return (int) n.NumberToken.Value;
+            if (node is LiteralExpressionSyntax n)
+                return (int) n.LiteralToken.Value;
 
             if (node is BinaryExpressionSyntax b)
             {

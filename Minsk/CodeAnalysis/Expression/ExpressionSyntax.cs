@@ -2,7 +2,7 @@
 
 namespace Minsk.CodeAnalysis.Expression
 {
-    abstract class ExpressionSyntax : SyntaxNode
+    public abstract class ExpressionSyntax : SyntaxNode
     {
     }
 }

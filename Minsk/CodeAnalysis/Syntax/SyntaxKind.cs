@@ -1,7 +1,10 @@
 ﻿namespace Minsk.CodeAnalysis.Syntax
 {
-    enum SyntaxKind
+    public enum SyntaxKind
     {
+        //Tokens
+        BadToken,
+        EndOfFileToken,
         NumberToken,
         WhitespaceToken,
         PlusToken,
@@ -10,8 +13,7 @@
         SlashToken,
         OpenParenthesisToken,
         CloseParenthesisToken,
-        BadToken,
-        EndOfFileToken,
+        //Expressions
         NumberExpression,
         BinaryExpression,
         ParenthesizedExpression
