@@ -14,8 +14,9 @@
         OpenParenthesisToken,
         CloseParenthesisToken,
         //Expressions
-        NumberExpression,
+        LiteralExpression,
         BinaryExpression,
+        UnaryExpression,
         ParenthesizedExpression
     }
 }

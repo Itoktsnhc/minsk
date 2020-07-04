@@ -1,7 +1,6 @@
 ﻿using System.Collections.Generic;
-using Minsk.CodeAnalysis.Syntax;
 
-namespace Minsk.CodeAnalysis.Expression
+namespace Minsk.CodeAnalysis.Syntax
 {
     public sealed class LiteralExpressionSyntax : ExpressionSyntax
     {
@@ -10,7 +9,7 @@ namespace Minsk.CodeAnalysis.Expression
             LiteralToken = literalToken;
         }
 
-        public override SyntaxKind Kind => SyntaxKind.NumberExpression;
+        public override SyntaxKind Kind => SyntaxKind.LiteralExpression;
         public SyntaxToken LiteralToken { get; }
 
         public override IEnumerable<SyntaxNode> GetChildren()

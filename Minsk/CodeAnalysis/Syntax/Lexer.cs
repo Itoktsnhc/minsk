@@ -1,13 +1,12 @@
 ﻿using System.Collections.Generic;
-using Minsk.CodeAnalysis.Syntax;
 
-namespace Minsk.CodeAnalysis.Tools
+namespace Minsk.CodeAnalysis.Syntax
 {
     public class Lexer
     {
         private readonly string _text;
         private int _position;
-        private List<string> _diagnostics = new List<string>();
+        private readonly List<string> _diagnostics = new List<string>();
 
         public Lexer(string text)
         {
@@ -32,12 +31,8 @@ namespace Minsk.CodeAnalysis.Tools
             _position++;
         }
 
-        public SyntaxToken NextToken()
+        public SyntaxToken Lex()
         {
-            // <numbers>
-            // + - * / ( )
-            // <whitespace>
-
             if (_position >= _text.Length)
                 return new SyntaxToken(SyntaxKind.EndOfFileToken, _position, "\0", null);
 

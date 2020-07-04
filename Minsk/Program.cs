@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Linq;
+using Minsk.CodeAnalysis;
 using Minsk.CodeAnalysis.Syntax;
-using Minsk.CodeAnalysis.Tools;
 
 namespace Minsk
 {
