@@ -1,8 +1,7 @@
 ﻿using System;
-using Minsk.CodeAnalysis.Expression;
 using Minsk.CodeAnalysis.Syntax;
 
-namespace Minsk.CodeAnalysis.Tools
+namespace Minsk.CodeAnalysis
 {
     public class Evaluator
     {
@@ -29,17 +28,15 @@ namespace Minsk.CodeAnalysis.Tools
                     var operand = EvaluateExpression(u.Operand);
                     if (u.OperatorToken.Kind == SyntaxKind.MinusToken)
                     {
+                        return -operand;
+                    }
+
+                    if (u.OperatorToken.Kind == SyntaxKind.PlusToken)
+                    {
                         return operand;
                     }
 
-                    else if (u.OperatorToken.Kind == SyntaxKind.PlusToken)
-                    {
-                        return -operand;
-                    }
-                    else
-                    {
-                        throw new Exception($"Unexpected unary token {u.OperatorToken.Kind}");
-                    }
+                    throw new Exception($"Unexpected unary token {u.OperatorToken.Kind}");
                 }
                 case BinaryExpressionSyntax b:
                 {

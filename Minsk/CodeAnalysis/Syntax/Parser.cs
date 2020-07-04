@@ -1,8 +1,6 @@
 ﻿using System.Collections.Generic;
-using Minsk.CodeAnalysis.Expression;
-using Minsk.CodeAnalysis.Syntax;
 
-namespace Minsk.CodeAnalysis.Tools
+namespace Minsk.CodeAnalysis.Syntax
 {
     public class Parser
     {

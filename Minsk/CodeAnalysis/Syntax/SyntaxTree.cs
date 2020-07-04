@@ -1,7 +1,5 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
-using Minsk.CodeAnalysis.Expression;
-using Minsk.CodeAnalysis.Tools;
 
 namespace Minsk.CodeAnalysis.Syntax
 {
